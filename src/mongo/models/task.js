@@ -1,11 +1,26 @@
 const { taskModel } = require("../index");
+const { Schema } = require("mongoose");
+
+taskModel.update(
+    {}, 
+        {
+            $set: {
+                user_id: Schema.ObjectId
+            }
+        },
+        {
+            upsert:false,
+            multi:true
+        }
+);
 
 exports.saveTask = async (req, res) => {
-    const { title, description } = req.body;
+    const { title, description, userID } = req.body;
 
     new taskModel({
         title,
         description,
+        user_id: userID,
     })
         .save()
         .then(() => taskModel.findOne({}, [], {
@@ -22,7 +37,7 @@ exports.saveTask = async (req, res) => {
         })
         .catch(error => {
             return res.status(400).json({
-                status: "OK",
+                status: "error",
                 message: error.message,
             });
         });
@@ -31,19 +46,21 @@ exports.saveTask = async (req, res) => {
 exports.resolveTask = async (req, res) => {
     const { id } = req.params;
 
-    taskModel.findOneAndUpdate({ _id: id }, { resolved: true }, { rawResult: true, useFindAndModify: false })
+    taskModel.findOne({ _id: id })
+        .then(result => taskModel.updateOne({_id: id}, {resolved : !result.resolved}))
         .then(result => {
-            if ( ! result.value ) {
-                res.json({});
-            } else {
-                res.json(result.value);
-            }
+            res.json({
+                status: "OK",
+                data: {
+                    result
+                }
+            });
         })
-        .catch(err => {
+        .catch(error => {
             res.status(400).json({
                 status: "error",
                 errorCode: 3,
-                message: err.message,
+                message: error.message,
             });
         });
 };
@@ -101,8 +118,12 @@ exports.editTask = async (req, res) => {
 };
 
 exports.getTasks = async (req, res) => {
+    const { userID } = req.query;
+    console.log(userID);
     taskModel
-        .find({}, [], {
+        .find({
+            user_id: userID,
+        }, [], {
             sort: {
                 _id: -1,
             },

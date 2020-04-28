@@ -33,13 +33,12 @@ exports.register = (request, response) => {
     })
         .save()
         .then((res) => {
-            console.log(res);
             response.status(200).json({
                 status: "OK",
+                data: res,
             });
         })
         .catch((err) => {
-            console.log(err.message);
             response.status(400).json({
                 status: "error",
                 errorCode: 10,
@@ -50,8 +49,6 @@ exports.register = (request, response) => {
 
 exports.login = (request, response) => {
     const { login, password } = request.body;
-
-    console.log(request.body);
 
     if (!login || !password) {
         return response.status(400).json({
@@ -74,6 +71,9 @@ exports.login = (request, response) => {
             response.status(200).json({
                 status: "OK",
                 message: "Maybe need to set cookies!",
+                data: {
+                    id: result._id,
+                },
             });
         })
         .catch((err) => {
